@@ -20,8 +20,13 @@ describe 'ssh forward'
     app.get '/' @(req, res)
       res.send 'hi from web app'
 
+    shouldNotBeAbleToConnect()!
+
   afterEach
     server.close()
+
+  shouldNotBeAbleToConnect()! =
+    httpism.get "http://localhost:23456/".should.eventually.be.rejectedWith 'connect ECONNREFUSED'!
 
   it 'can connect to the web app'
     client.get '/'!.body.should.equal 'hi from web app'
@@ -36,6 +41,20 @@ describe 'ssh forward'
       remotePort = webAppPort
     } @(port)
       httpism.get "http://localhost:#(port)/"!.body.should.equal 'hi from web app'
+
+  it 'when the block fails, it closes the port' =>
+    self.timeout 5000
+
+    sshForward {
+      hostname = 'localhost'
+      localPort = 23456
+      remoteHost = 'localhost'
+      remotePort = webAppPort
+    } @(port)
+      @throw @new Error 'oh dear'
+    .should.eventually.be.rejectedWith 'oh dear'!
+
+    shouldNotBeAbleToConnect()!
 
   it 'can not connect to the web app after it has finished' =>
     self.timeout 5000
