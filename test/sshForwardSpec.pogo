@@ -33,6 +33,7 @@ describe 'ssh forward'
 
   it 'can connect to the web app through ssh' =>
     self.timeout 5000
+    responseBody = nil
 
     sshForward! {
       hostname = 'localhost'
@@ -40,7 +41,9 @@ describe 'ssh forward'
       remoteHost = 'localhost'
       remotePort = webAppPort
     } @(port)
-      httpism.get "http://localhost:#(port)/"!.body.should.equal 'hi from web app'
+      responseBody := httpism.get "http://localhost:#(port)/"!.body
+    
+    responseBody.should.equal 'hi from web app'
 
   it 'when the block fails, it closes the port' =>
     self.timeout 5000

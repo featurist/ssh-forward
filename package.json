@@ -3,7 +3,6 @@
   "version": "0.1.1",
   "main": "index.js",
   "directories": {
-    "test": "test"
   },
   "dependencies": {
     "bluebird": "^2.1.3"
@@ -17,7 +16,7 @@
     "pogo": "^0.8.4"
   },
   "scripts": {
-    "test": "mocha",
+    "test": "mocha test/**Spec.pogo",
     "prepublish": "pogo -c index.pogo"
   },
   "repository": {
