@@ -11,14 +11,25 @@ module.exports (options, block) =
 
   waitToOpen(options.localPort, ssh)!
 
-  try
-    block(options.localPort)!
-  finally
-    ssh.kill()
+  if (block)
+    try
+      block(options.localPort)!
+    finally
+      ssh.kill()
+      waitFor (ssh) toClose!
+  else
+    {
+      port = options.localPort
 
-    promise! @(result, error)
-      ssh.on 'close' @(code)
-        result()
+      close ()! =
+        ssh.kill()
+        waitFor (ssh) toClose!
+    }
+
+waitFor (ssh) toClose! =
+  promise! @(result, error)
+    ssh.on 'close' @(code)
+      result()
 
 waitToOpen (port, ssh) =
   keepTrying = true

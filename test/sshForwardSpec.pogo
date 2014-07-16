@@ -4,10 +4,11 @@ httpism = require 'httpism'
 chai = require 'chai'
 should = chai.should()
 chaiAsPromised = require 'chai-as-promised'
-
 chai.use(chaiAsPromised)
 
-describe 'ssh forward'
+describe 'ssh forward' =>
+  self.timeout 5000
+
   app = nil
   server = nil
   webAppPort = 12345
@@ -18,6 +19,7 @@ describe 'ssh forward'
     server := app.listen (webAppPort)
 
     app.get '/' @(req, res)
+      setTimeout ^ 100!
       res.send 'hi from web app'
 
     shouldNotBeAbleToConnect()!
@@ -31,9 +33,8 @@ describe 'ssh forward'
   it 'can connect to the web app'
     client.get '/'!.body.should.equal 'hi from web app'
 
-  it 'can connect to the web app through ssh' =>
-    self.timeout 5000
-    responseBody = nil
+  it 'can connect to the web app through ssh'
+    responseBodies = nil
 
     sshForward! {
       hostname = 'localhost'
@@ -41,13 +42,11 @@ describe 'ssh forward'
       remoteHost = 'localhost'
       remotePort = webAppPort
     } @(port)
-      responseBody := httpism.get "http://localhost:#(port)/"!.body
-    
-    responseBody.should.equal 'hi from web app'
+      responseBodies := [n <- [1..2], httpism.get "http://localhost:#(port)/"!.body]
 
-  it 'when the block fails, it closes the port' =>
-    self.timeout 5000
+    responseBodies.should.eql ['hi from web app', 'hi from web app']
 
+  it 'when the block fails, it closes the port'
     sshForward {
       hostname = 'localhost'
       localPort = 23456
@@ -59,9 +58,7 @@ describe 'ssh forward'
 
     shouldNotBeAbleToConnect()!
 
-  it 'can not connect to the web app after it has finished' =>
-    self.timeout 5000
-
+  it 'can not connect to the web app after it has finished'
     sshForward {
       hostname = 'localhost'
       localPort = 23456
@@ -71,9 +68,7 @@ describe 'ssh forward'
 
     httpism.get "http://localhost:23456/".should.eventually.be.rejectedWith (Error)
 
-  it 'fails gracefully' =>
-    self.timeout 5000
-
+  it 'fails gracefully'
     privilegedPort = 80
 
     sshForward {
@@ -82,3 +77,18 @@ describe 'ssh forward'
       remoteHost = 'localhost'
       remotePort = webAppPort
     } @{}.should.eventually.be.rejectedWith r/ssh exited with 255: Privileged ports can only be forwarded by root./
+
+  it 'can open and close the port without a block'
+    tunnel = sshForward! {
+      hostname = 'localhost'
+      localPort = 23456
+      remoteHost = 'localhost'
+      remotePort = webAppPort
+    }
+
+    responseBody = httpism.get "http://localhost:#(tunnel.port)/"!.body
+    responseBody.should.equal 'hi from web app'
+
+    tunnel.close()!
+
+    httpism.get "http://localhost:23456/".should.eventually.be.rejectedWith (Error)!
