@@ -78,6 +78,17 @@ describe 'ssh forward' =>
       remotePort = webAppPort
     } @{}.should.eventually.be.rejectedWith r/ssh exited with 255: Privileged ports can only be forwarded by root./
 
+  it 'can be passed an ssh command'
+    privilegedPort = 80
+
+    sshForward {
+      hostname = 'localhost'
+      localPort = 23456
+      remoteHost = 'localhost'
+      remotePort = webAppPort
+      command = 'ssh -p 4000'
+    } @{}.should.eventually.be.rejectedWith r/ssh exited with 255: ssh: connect to host localhost port 4000: Connection refused/
+
   it 'can open and close the port without a block'
     tunnel = sshForward! {
       hostname = 'localhost'

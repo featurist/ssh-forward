@@ -1,12 +1,17 @@
 spawn = require 'child_process'.spawn
 net = require 'net'
+parseCommand = require 'shell-quote'.parse
 
 module.exports (options, block) =
-  ssh = spawn('ssh', [
+  sshCommand = parseSshCommand(options.command)
+
+  ssh = spawn(sshCommand.ssh, [
     options.hostname
     "-L#(options.localPort):#(options.remoteHost):#(options.remotePort)"
     '-N'
     '-oBatchMode=yes'
+    sshCommand.args
+    ...
   ])
 
   waitToOpen(options.localPort, ssh)!
@@ -25,6 +30,13 @@ module.exports (options, block) =
         ssh.kill()
         waitFor (ssh) toClose!
     }
+
+parseSshCommand (command) =
+  if (command)
+    args = parseCommand(command)
+    { ssh = args.0, args = args.slice(1) }
+  else
+    { ssh = 'ssh', args = [] }
 
 waitFor (ssh) toClose! =
   promise! @(result, error)
