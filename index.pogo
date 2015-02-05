@@ -42,7 +42,7 @@ parseSshCommand (command) =
 
 waitFor (ssh) toClose! =
   promise! @(result, error)
-    ssh.on 'close' @(code)
+    ssh.on 'exit' @(code)
       result()
 
 waitToOpen (port, ssh) =
@@ -55,7 +55,7 @@ waitToOpen (port, ssh) =
   promise @(result, error)
     errorStream = stream (ssh.stderr) toString
 
-    ssh.on 'close' @(code)
+    ssh.on 'exit' @(code)
       keepTrying := false
       if (code != 0)
         error(@new Error "ssh exited with #(code): #(errorStream!)")
