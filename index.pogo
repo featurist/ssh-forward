@@ -20,15 +20,17 @@ module.exports (options, block) =
     try
       block(options.localPort)!
     finally
+      closed = waitFor (ssh) toClose
       ssh.kill()
-      waitFor (ssh) toClose!
+      closed!
   else
     {
       port = options.localPort
 
       close ()! =
+        closed = waitFor (ssh) toClose
         ssh.kill()
-        waitFor (ssh) toClose!
+        closed!
     }
 
 parseSshCommand (command) =
