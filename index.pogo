@@ -14,13 +14,13 @@ module.exports (options, block) =
     ...
   ])
 
+  closed = waitFor (ssh) toClose
   waitToOpen(options.localPort, ssh)!
 
   if (block)
     try
       block(options.localPort)!
     finally
-      closed = waitFor (ssh) toClose
       ssh.kill()
       closed!
   else
@@ -28,7 +28,6 @@ module.exports (options, block) =
       port = options.localPort
 
       close ()! =
-        closed = waitFor (ssh) toClose
         ssh.kill()
         closed!
     }
